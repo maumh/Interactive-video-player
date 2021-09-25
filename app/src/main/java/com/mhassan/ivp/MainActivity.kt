@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private val delayBeforeStart = 4000L
     private lateinit var locationManager: LocationManager
     private lateinit var mPlayer : SimpleExoPlayer
+    private var isPlayerPaused  = false
 
     // video url
     val videoUri : String = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
@@ -61,6 +62,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if(isPlayerPaused){
+            isPlayerPaused = false
+            mPlayer.play()
+        }
         // check location permissions
         if (checkPermission()) {
             // if premission granted start location service
@@ -73,6 +78,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        mPlayer.pause()
+        isPlayerPaused = true
 
         locationManager.stopLocationUpdates()
     }
