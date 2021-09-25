@@ -50,4 +50,7 @@ dependencies {
 
     // ExoPlayer dependency used for the player
     implementation 'com.google.android.exoplayer:exoplayer:2.15.1'
+
+    //add google play service location service
+    implementation 'com.google.android.gms:play-services-location:18.0.0'
 }

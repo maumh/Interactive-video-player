@@ -3,6 +3,9 @@
     package="com.mhassan.ivp">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    // location service required permissions
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name="androidx.multidex.MultiDexApplication"
