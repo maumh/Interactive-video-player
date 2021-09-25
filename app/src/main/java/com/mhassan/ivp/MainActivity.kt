@@ -2,8 +2,11 @@ package com.mhassan.ivp
 
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
@@ -19,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
 
     // request code used when requesting permissions
     private val PERMISSION_REQUEST_CODE = 88
@@ -27,7 +30,9 @@ class MainActivity : AppCompatActivity() {
     // delay before video starts playing
     private val delayBeforeStart = 4000L
     private lateinit var locationManager: LocationManager
+    private lateinit var shakeManager: ShakeManager
     private lateinit var mPlayer : SimpleExoPlayer
+
     private var isPlayerPaused  = false
 
     // video url
@@ -58,6 +63,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         locationManager = LocationManager(mPlayer, this)
+
+        shakeManager = ShakeManager(mPlayer, this)
+        shakeManager.setOnShakeListener(this);
     }
 
     override fun onResume() {
@@ -66,6 +74,7 @@ class MainActivity : AppCompatActivity() {
             isPlayerPaused = false
             mPlayer.play()
         }
+        shakeManager.startShakeDetection()
         // check location permissions
         if (checkPermission()) {
             // if premission granted start location service
@@ -80,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
         mPlayer.pause()
         isPlayerPaused = true
+        shakeManager.stopShakeDetection()
 
         locationManager.stopLocationUpdates()
     }
@@ -128,5 +138,13 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("Cancel", null)
                 .create()
                 .show()
+    }
+
+    override fun onShake(count: Int) {
+        if(mPlayer.isPlaying){
+            mPlayer.pause()
+        }else{
+            mPlayer.play()
+        }
     }
 }

@@ -5,50 +5,83 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.os.Bundle
-import android.widget.Toast
-import java.util.*
-import kotlin.math.sqrt
+import com.google.android.exoplayer2.SimpleExoPlayer
 
-class ShakeManager (context: Context){
+class ShakeManager(mPlayer: SimpleExoPlayer, context: Context) : SensorEventListener {
+
     val context: Context = context
+    val mPlayer: SimpleExoPlayer = mPlayer
 
-    private var sensorManager: SensorManager? = null
-    private var acceleration = 0f
-    private var currentAcceleration = 0f
-    private var lastAcceleration = 0f
 
-    private val sensorListener: SensorEventListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent) {
+    private var mListener: OnShakeListener? = null
+    private var mShakeTimestamp: Long = 0
+    private var mShakeCount: Int = 0
+    private var mSensorManager: SensorManager? = null
+    private var mAccelerometer: Sensor? = null
+
+    init {
+        mSensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        mAccelerometer = mSensorManager!!
+            .getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    }
+
+    fun startShakeDetection(){
+        mSensorManager!!.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI)
+    }
+
+    fun stopShakeDetection(){
+        mSensorManager!!.unregisterListener(this)
+    }
+
+    fun setOnShakeListener(listener: OnShakeListener) {
+        this.mListener = listener
+    }
+
+    interface OnShakeListener {
+        fun onShake(count: Int)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        // ignore
+    }
+
+    override fun onSensorChanged(event: SensorEvent) {
+
+        if (mListener != null) {
             val x = event.values[0]
             val y = event.values[1]
             val z = event.values[2]
-            lastAcceleration = currentAcceleration
-            currentAcceleration = sqrt((x * x + y * y + z * z).toDouble()).toFloat()
-            val delta: Float = currentAcceleration - lastAcceleration
-            acceleration = acceleration * 0.9f + delta
-            if (acceleration > 12) {
-                Toast.makeText(context, "Shake event detected", Toast.LENGTH_SHORT).show()
+
+            val gX = x / SensorManager.GRAVITY_EARTH
+            val gY = y / SensorManager.GRAVITY_EARTH
+            val gZ = z / SensorManager.GRAVITY_EARTH
+
+            // gForce will be close to 1 when there is no movement.
+            val gForce = Math.sqrt((gX * gX + gY * gY + gZ * gZ).toDouble()).toFloat()
+
+            if (gForce > SHAKE_THRESHOLD_GRAVITY) {
+                val now = System.currentTimeMillis()
+                // ignore shake events too close to each other (500ms)
+                if (mShakeTimestamp + SHAKE_SLOP_TIME_MS > now) {
+                    return
+                }
+
+                // reset the shake count after 3 seconds of no shakes
+                if (mShakeTimestamp + SHAKE_COUNT_RESET_TIME_MS < now) {
+                    mShakeCount = 0
+                }
+
+                mShakeTimestamp = now
+                mShakeCount++
+
+                mListener!!.onShake(mShakeCount)
             }
         }
-        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
 
-    init {
-        sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        Objects.requireNonNull(sensorManager)!!.registerListener(sensorListener, sensorManager!!
-            .getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL)
-        acceleration = 10f
-        currentAcceleration = SensorManager.GRAVITY_EARTH
-        lastAcceleration = SensorManager.GRAVITY_EARTH
-    }
-
-    fun resumeDetection (){
-        sensorManager?.registerListener(sensorListener, sensorManager!!.getDefaultSensor(
-            Sensor .TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL
-        )
-    }
-    fun pauseDetection() {
-        sensorManager!!.unregisterListener(sensorListener)
+    companion object {
+        private val SHAKE_THRESHOLD_GRAVITY = 2.7f
+        private val SHAKE_SLOP_TIME_MS = 500
+        private val SHAKE_COUNT_RESET_TIME_MS = 3000
     }
 }
