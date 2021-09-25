@@ -7,6 +7,7 @@ import android.os.Looper
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.gms.location.*
 
+@SuppressLint("MissingPermission")
 class LocationManager(mPlayer: SimpleExoPlayer, context: Context){
     val mPlayer: SimpleExoPlayer = mPlayer
     val context: Context = context
@@ -14,27 +15,23 @@ class LocationManager(mPlayer: SimpleExoPlayer, context: Context){
     val locationUpdateInterval : Long = 3000
     val locationFastUpdateInterval : Long = 1000
     val videoReloadDistance : Int = 10
+    lateinit var locationRequest : LocationRequest
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     // init var with null value
     private var lastKnownLocaiton: Location? = null
 
-    @SuppressLint("MissingPermission")
-    public fun startLocationService(){
+    init {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
             lastKnownLocaiton = location
         }
 
-        val locationRequest : LocationRequest = LocationRequest.create();
+        locationRequest = LocationRequest.create();
         locationRequest.setInterval(locationUpdateInterval);
         locationRequest.setFastestInterval(locationFastUpdateInterval);
-
-        fusedLocationClient.requestLocationUpdates(locationRequest,
-            locationCallback,
-            Looper.getMainLooper())
     }
 
     val locationCallback = object : LocationCallback() {
@@ -57,6 +54,12 @@ class LocationManager(mPlayer: SimpleExoPlayer, context: Context){
                 }
             }
         }
+    }
+
+    fun startLocationUpdates(){
+        fusedLocationClient.requestLocationUpdates(locationRequest,
+            locationCallback,
+            Looper.getMainLooper())
     }
 
     fun stopLocationUpdates() {

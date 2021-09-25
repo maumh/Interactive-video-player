@@ -69,7 +69,7 @@ class MainActivity : AppCompatActivity() {
         // check location permissions
         if (checkPermission()) {
             // if premission granted start location service
-            locationManager.startLocationService()
+            locationManager.startLocationUpdates()
         }else{
             // if permissions not granted request permission.
             requestPermission();
@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
                 val coarseLocationAccepted = grantResults[1] == PackageManager.PERMISSION_GRANTED
 
                 if (fineLocationAccepted && coarseLocationAccepted) {
-                    locationManager.startLocationService()
+                    locationManager.startLocationUpdates()
                 } else {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION)) {
