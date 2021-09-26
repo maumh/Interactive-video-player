@@ -12,9 +12,13 @@
         app:show_shuffle_button="true"
         app:show_subtitle_button="true"/>
 
-    <TextView android:id="@+id/txtLocation"
+    <TextView android:id="@+id/txtCountDown"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:text="Time till video start 4"
+        android:textColor="#000"
+        android:textSize="22sp"
+        android:layout_margin="10dp"
         android:gravity="top|center"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

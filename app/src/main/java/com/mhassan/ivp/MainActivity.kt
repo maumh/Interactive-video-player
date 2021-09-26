@@ -6,6 +6,9 @@ import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -23,6 +26,10 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
     private lateinit var locationManager: LocationManager
     private lateinit var playerSensorManager: PlayerSensorManager
     private lateinit var mPlayer : SimpleExoPlayer
+
+    private lateinit var txtCountDown : TextView
+
+    // flag used to check if the app was paused or not
     private var isPlayerPaused  = false
 
     // video url
@@ -42,13 +49,7 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
         mPlayer.setMediaItem(mediaItem)
         mPlayer.prepare()
 
-        // start video play after delay.
-        runBlocking {
-            launch { // launch a new coroutine
-                delay(delayBeforeStart) // non-blocking delay
-                mPlayer.play() // start the video play
-            }
-        }
+        txtCountDown = findViewById(R.id.txtCountDown)
 
         locationManager = LocationManager(mPlayer, this)
 
@@ -61,6 +62,19 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
         if(isPlayerPaused){
             isPlayerPaused = false
             mPlayer.play()
+        }else{
+            val timer = object: CountDownTimer(4000, 1000) {
+                override fun onTick(millisUntilFinished: Long) {
+                    val remainingTime = millisUntilFinished/1000+1
+                    txtCountDown.text = "Time till video start $remainingTime"
+                }
+
+                override fun onFinish() {
+                    txtCountDown.visibility = View.GONE
+                    mPlayer.play()
+                }
+            }
+            timer.start()
         }
 
         playerSensorManager.startShakeDetection()
@@ -77,7 +91,9 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
     override fun onPause() {
         super.onPause()
         mPlayer.pause()
+
         isPlayerPaused = true
+
         playerSensorManager.stopShakeDetection()
 
         locationManager.stopLocationUpdates()
