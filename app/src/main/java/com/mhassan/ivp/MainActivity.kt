@@ -16,9 +16,6 @@ import androidx.core.content.ContextCompat
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 
 class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
@@ -26,6 +23,7 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
     private lateinit var locationManager: LocationManager
     private lateinit var playerSensorManager: PlayerSensorManager
     private lateinit var mPlayer : SimpleExoPlayer
+    private lateinit var playerView : PlayerView
 
     private lateinit var txtCountDown : TextView
 
@@ -40,7 +38,7 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
         setContentView(R.layout.activity_main)
 
         // used for testing will be removed when done using it 
-        val playerView : PlayerView = findViewById(R.id.player_view)
+        playerView = findViewById(R.id.player_view)
 
         mPlayer = SimpleExoPlayer.Builder(this).build()
         playerView.player = mPlayer
@@ -57,23 +55,26 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
         playerSensorManager.setOnShakeListener(this)
     }
 
+    // count down timer to play the video
+    private val timer = object: CountDownTimer(DELAY_BEFORE_START, COUNT_DOWN_INTERVAL) {
+        override fun onTick(millisUntilFinished: Long) {
+            val remainingTime = millisUntilFinished/1000+1
+            txtCountDown.text = getString(R.string.count_down_text, remainingTime)
+        }
+
+        override fun onFinish() {
+            txtCountDown.visibility = View.GONE
+            playerView.visibility = View.VISIBLE
+            mPlayer.play()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         if(isPlayerPaused){
             isPlayerPaused = false
             mPlayer.play()
         }else{
-            val timer = object: CountDownTimer(4000, 1000) {
-                override fun onTick(millisUntilFinished: Long) {
-                    val remainingTime = millisUntilFinished/1000+1
-                    txtCountDown.text = "Time till video start $remainingTime"
-                }
-
-                override fun onFinish() {
-                    txtCountDown.visibility = View.GONE
-                    mPlayer.play()
-                }
-            }
             timer.start()
         }
 
@@ -156,6 +157,7 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
         // request code used when requesting permissions
         private const val PERMISSION_REQUEST_CODE = 88
         // delay before video starts playing
-        private const val delayBeforeStart = 4000L
+        private const val DELAY_BEFORE_START = 4000L
+        private const val COUNT_DOWN_INTERVAL = 1000L
     }
 }

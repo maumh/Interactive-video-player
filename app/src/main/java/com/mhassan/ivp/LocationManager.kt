@@ -8,47 +8,43 @@ import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.gms.location.*
 
 @SuppressLint("MissingPermission")
-class LocationManager(mPlayer: SimpleExoPlayer, context: Context){
-    val mPlayer: SimpleExoPlayer = mPlayer
-    val context: Context = context
+class LocationManager(val mPlayer: SimpleExoPlayer, context: Context){
+    private val locationUpdateInterval : Long = 3000
+    private val locationFastUpdateInterval : Long = 1000
+    private val videoReloadDistance : Int = 10
+    private var locationRequest : LocationRequest
 
-    val locationUpdateInterval : Long = 3000
-    val locationFastUpdateInterval : Long = 1000
-    val videoReloadDistance : Int = 10
-    lateinit var locationRequest : LocationRequest
-
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var fusedLocationClient: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
 
     // init var with null value
-    private var lastKnownLocaiton: Location? = null
+    private var lastKnownLocation: Location? = null
 
     init {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 
         fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
-            lastKnownLocaiton = location
+            lastKnownLocation = location
         }
 
-        locationRequest = LocationRequest.create();
-        locationRequest.setInterval(locationUpdateInterval);
-        locationRequest.setFastestInterval(locationFastUpdateInterval);
+        locationRequest = LocationRequest.create()
+        locationRequest.interval = locationUpdateInterval
+        locationRequest.fastestInterval = locationFastUpdateInterval
     }
 
-    val locationCallback = object : LocationCallback() {
+    private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult?) {
 
             locationResult ?: return
 
             for (location in locationResult.locations){
                 if(location != null){
-                    if(lastKnownLocaiton == null){
-                        lastKnownLocaiton = location
+                    if(lastKnownLocation == null){
+                        lastKnownLocation = location
                     }else {
-                        val distance = location.distanceTo(lastKnownLocaiton).toDouble()
+                        val distance = location.distanceTo(lastKnownLocation).toDouble()
                         if (distance > videoReloadDistance) {
-                            lastKnownLocaiton = location
-                            mPlayer.seekTo(0);
-                            mPlayer.setPlayWhenReady(true);
+                            lastKnownLocation = location
+                            mPlayer.seekTo(0)
+                            mPlayer.playWhenReady = true
                         }
                     }
                 }
