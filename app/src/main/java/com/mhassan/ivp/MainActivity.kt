@@ -128,7 +128,7 @@ class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
                 .show()
     }
 
-    override fun onShake(count: Int) {
+    override fun onShake() {
         if(mPlayer.isPlaying){
             mPlayer.pause()
         }else{
