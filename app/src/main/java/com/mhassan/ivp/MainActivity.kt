@@ -2,14 +2,10 @@ package com.mhassan.ivp
 
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
-import android.content.Context
 import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -22,30 +18,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 
-class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
+class MainActivity : AppCompatActivity(), PlayerSensorManager.OnShakeListener {
 
-    // request code used when requesting permissions
-    private val PERMISSION_REQUEST_CODE = 88
-
-    // delay before video starts playing
-    private val delayBeforeStart = 4000L
     private lateinit var locationManager: LocationManager
-    private lateinit var shakeManager: ShakeManager
+    private lateinit var playerSensorManager: PlayerSensorManager
     private lateinit var mPlayer : SimpleExoPlayer
-
     private var isPlayerPaused  = false
 
     // video url
-    val videoUri : String = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
+    private val videoUri : String = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val txtLocation : TextView = findViewById(R.id.txtLocation)
-
         // used for testing will be removed when done using it 
-        val playerView : PlayerView = findViewById<PlayerView>(R.id.player_view)
+        val playerView : PlayerView = findViewById(R.id.player_view)
 
         mPlayer = SimpleExoPlayer.Builder(this).build()
         playerView.player = mPlayer
@@ -64,8 +52,8 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
 
         locationManager = LocationManager(mPlayer, this)
 
-        shakeManager = ShakeManager(mPlayer, this)
-        shakeManager.setOnShakeListener(this);
+        playerSensorManager = PlayerSensorManager(mPlayer, this)
+        playerSensorManager.setOnShakeListener(this)
     }
 
     override fun onResume() {
@@ -74,14 +62,15 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
             isPlayerPaused = false
             mPlayer.play()
         }
-        shakeManager.startShakeDetection()
+
+        playerSensorManager.startShakeDetection()
         // check location permissions
         if (checkPermission()) {
-            // if premission granted start location service
+            // if permission granted start location service
             locationManager.startLocationUpdates()
         }else{
             // if permissions not granted request permission.
-            requestPermission();
+            requestPermission()
         }
     }
 
@@ -89,7 +78,7 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
         super.onPause()
         mPlayer.pause()
         isPlayerPaused = true
-        shakeManager.stopShakeDetection()
+        playerSensorManager.stopShakeDetection()
 
         locationManager.stopLocationUpdates()
     }
@@ -107,7 +96,7 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
-            PERMISSION_REQUEST_CODE -> if (grantResults.size > 0) {
+            PERMISSION_REQUEST_CODE -> if (grantResults.isNotEmpty()) {
                 val fineLocationAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED
                 val coarseLocationAccepted = grantResults[1] == PackageManager.PERMISSION_GRANTED
 
@@ -116,8 +105,7 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
                 } else {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         if (shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION)) {
-                            showMessageOKCancel("You need to allow access to both the permissions",
-                                    DialogInterface.OnClickListener { dialog, which ->
+                            showMessageOKCancel(DialogInterface.OnClickListener { _, _ ->
                                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                                             requestPermissions(arrayOf(ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION),
                                                     PERMISSION_REQUEST_CODE)
@@ -131,9 +119,9 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
         }
     }
 
-    private fun showMessageOKCancel(message: String, okListener: DialogInterface.OnClickListener) {
+    private fun showMessageOKCancel(okListener: DialogInterface.OnClickListener) {
         AlertDialog.Builder(this@MainActivity)
-                .setMessage(message)
+                .setMessage("You need to allow access to both the permissions")
                 .setPositiveButton("OK", okListener)
                 .setNegativeButton("Cancel", null)
                 .create()
@@ -146,5 +134,12 @@ class MainActivity : AppCompatActivity(), ShakeManager.OnShakeListener {
         }else{
             mPlayer.play()
         }
+    }
+
+    companion object {
+        // request code used when requesting permissions
+        private const val PERMISSION_REQUEST_CODE = 88
+        // delay before video starts playing
+        private const val delayBeforeStart = 4000L
     }
 }
